@@ -1,0 +1,13 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <BinDir Condition="'$(BinDir)' == '' and '$(BUILD_ARTIFACTSTAGINGDIRECTORY)' != ''">$(BUILD_ARTIFACTSTAGINGDIRECTORY)\bin</BinDir>
+    <BinDir Condition="'$(BinDir)' == ''">$(MSBuildThisFileDirectory)bin</BinDir>
+    <BinDir>$([MSBuild]::EnsureTrailingSlash($(BinDir)))</BinDir>
+    <ObjDir Condition="'$(ObjDir)' == ''">$(MSBuildThisFileDirectory)obj</ObjDir>
+    <ObjDir>$([MSBuild]::EnsureTrailingSlash($(ObjDir)))</ObjDir>
+
+    <LibDir>$(MSBuildThisFileDirectory)lib\</LibDir>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,118 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <UsingTask TaskName="DownloadFile" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildBinPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <RequestUri Required="true" />
+      <OutputFile Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Reference Include="Microsoft.Build" />
+      <Reference Include="System.Net" />
+      <Reference Include="System" />
+      <Using Namespace="System" />
+      <Using Namespace="System.Net" />
+      <Using Namespace="System.Threading" />
+      <Code Type="Fragment" Language="cs">
+        <![CDATA[
+        var wc = new WebClient();
+        var lastProgress = 0;
+        var sync = new object();
+        wc.DownloadProgressChanged += (sender, args) =>
+        {
+            lock (sync)
+            {
+	            if (args.ProgressPercentage % 5 == 0 && args.ProgressPercentage != lastProgress)
+                {
+                    lastProgress = args.ProgressPercentage;
+
+                    var receivedUnit = (args.BytesReceived / 1024 / 1024) > 1 ? "M" : "k";
+                    var totalUnit = (args.TotalBytesToReceive / 1024 / 1024) > 1 ? "M" : "k";
+
+                    Log.LogMessage("{0}% ({1}{2} of {3}{4}) received", 
+                        args.ProgressPercentage, 
+	                    (int)(args.BytesReceived / (receivedUnit == "k" ? 1024 : 1024 * 1024)),
+	                    receivedUnit,
+	                    (int)(args.TotalBytesToReceive / (totalUnit == "k" ? 1024 : 1024 * 1024)),
+	                    totalUnit);
+                }
+            }
+        };
+        var ev = new ManualResetEventSlim();
+        wc.DownloadFileCompleted += (sender, args) => ev.Set();
+        wc.DownloadFileAsync(new Uri(RequestUri), OutputFile);
+        ev.Wait();
+         ]]>
+      </Code>
+    </Task>
+  </UsingTask>
+
+  <UsingTask TaskName="HttpClient" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildBinPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <RequestUri Required="true" />
+      <Method />
+      <ReadContent />
+      <Content Output="true" />
+      <Headers ParameterType="Microsoft.Build.Framework.ITaskItem" Output="true" />
+      <ReasonPhrase Output="true" />
+      <StatusCode Output="true" />
+    </ParameterGroup>
+    <Task>
+      <Reference Include="Microsoft.Build" />
+      <Reference Include="System.Net.Http" />
+      <Reference Include="System" />
+      <Reference Include="System.Core" />
+      <Using Namespace="System" />
+      <Using Namespace="System.Net" />
+      <Using Namespace="System.Net.Http" />
+      <Code Type="Fragment" Language="cs">
+        <![CDATA[
+        Log.LogMessage("Requesting {0}...", RequestUri); 
+
+        using (var http = new System.Net.Http.HttpClient())
+        {
+	        http.DefaultRequestHeaders.UserAgent.Add(new System.Net.Http.Headers.ProductInfoHeaderValue(".NET", Environment.Version.ToString()));
+	        var method = string.IsNullOrEmpty(Method) ? System.Net.Http.HttpMethod.Get : new System.Net.Http.HttpMethod(Method.ToUpperInvariant());
+	        var request = new System.Net.Http.HttpRequestMessage(method, RequestUri);
+	        var readContent = true;
+	        if (!string.IsNullOrEmpty(ReadContent))
+		        bool.TryParse(ReadContent, out readContent);
+
+	        if (Headers != null)
+	        {
+		        foreach (DictionaryEntry header in Headers.CloneCustomMetadata())
+			        request.Headers.TryAddWithoutValidation(header.Key.ToString(), header.Value.ToString());
+	        }
+
+	        if (!string.IsNullOrEmpty(Content))
+		        request.Content = new System.Net.Http.StringContent(Content);
+
+	        var response = http.SendAsync(request).Result;
+	
+	        Headers = new TaskItem("Response");
+	        foreach (var header in response.Headers)
+	        {
+		        Headers.SetMetadata(header.Key, string.Join(", ", header.Value));
+	        }
+
+	        if (response.Headers.Location == null)
+		        Headers.SetMetadata("Location", response.RequestMessage.RequestUri.ToString());		
+
+            if (readContent)
+                Content = response.Content.ReadAsStringAsync().Result;
+
+            StatusCode = response.StatusCode.ToString();
+            ReasonPhrase = response.ReasonPhrase;
+
+            if (!response.IsSuccessStatusCode)
+            {
+                Log.LogError("{0}: {1}, for {2}", StatusCode, ReasonPhrase, RequestUri);
+            }
+
+            return response.IsSuccessStatusCode && !Log.HasLoggedErrors;
+        }
+                ]]>
+      </Code>
+    </Task>
+  </UsingTask>
+
+</Project>

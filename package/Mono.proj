@@ -1,0 +1,39 @@
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\build\corebuild.props" />
+  <Import Project="..\build.props" />
+
+  <!-- Package metadata -->
+  <PropertyGroup>
+    <PackageId>$(AssemblyName)</PackageId>
+    <PackageVersion>$(Version)</PackageVersion>
+    <PackageVersion Condition="'$(PackageVersion)' == ''">0.1.0</PackageVersion>
+    <Authors>Mono</Authors>
+    <Description Condition="'$(Description)' == ''">$(PackageId)</Description>
+  </PropertyGroup>
+
+  <!-- Package build props -->
+  <PropertyGroup>
+    <PackageOutputPath>$(BinDir.TrimEnd('\'))</PackageOutputPath>
+    <PackOnBuild>true</PackOnBuild>
+    <InferPackageContents>false</InferPackageContents>
+    <EmitNuSpec>false</EmitNuSpec>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <WinPath>$(ObjDir)Win\msi\Mono\lib\mono\4.5</WinPath>
+    <MacPath>$(ObjDir)Mac\Library\Frameworks\Mono.framework\Versions\$([System.Text.RegularExpressions.Regex]::Match("$(PackageVersion)", "\d+\.\d+\.\d+").Value)\lib\mono\4.5</MacPath>
+  </PropertyGroup>
+
+  <Target Name="Build" DependsOnTargets="$(BuildDependsOn)" />
+
+  <ItemGroup>
+    <PackageReference Include="NuGet.Build.Packaging" Version="*" />
+
+    <PackageFile Include="$(AssemblyName).targets" PackagePath="build\net45\$(AssemblyName).targets" />
+
+    <PackageFile Include="$(WinPath)\$(AssemblyName).dll" PackagePath="build\net45\win\$(AssemblyName).dll" />
+    <PackageFile Include="$(MacPath)\$(AssemblyName).dll" PackagePath="build\net45\mac\$(AssemblyName).dll" />
+  </ItemGroup>
+
+  <Import Project="..\build\corebuild.targets" />
+</Project>
