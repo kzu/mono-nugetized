@@ -1,128 +1,14 @@
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="build\corebuild.props" />
   <Import Project="build.props" />
 
-  <PropertyGroup>
-    <Zip>$(LibDir)7z.exe</Zip>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <!-- Validate/init feed before pushing. Typically, init is done once, manually. Validate takes time -->
-    <SleetValidate Condition="'$(SleetValidate)' == ''">false</SleetValidate>
-    
-    <BuildDependsOn>
-      _ReadManifest;
-      _CleanExtracted;
-      _DownloadInstaller;
-      _ExtractMsiInstaller;
-      _ExtractPkgInstaller;
-    </BuildDependsOn>
-  </PropertyGroup>
-
   <ItemGroup>
-    <PackageReference Include="Sleet.Azure" Version="*" />
-    <Package Include="$(BinDir)*.nupkg" />
+    <NuGetize Include="Mono.Posix">
+      <Description>POSIX interface for Mono and .NET.</Description>
+    </NuGetize>
+    <NuGetize Include="Mono.Security">
+      <Description>Mono.Security containing utilities like Authenticode.</Description>
+    </NuGetize>
   </ItemGroup>
 
-  <Target Name="Build" DependsOnTargets="$(BuildDependsOn)">
-    <Message Text="Building packages for version v$(Version)" Importance="high" />
-
-    <MSBuild Projects="package\Mono.proj"
-             Properties="AssemblyName=Mono.Posix;Version=$(Version);Description=POSIX interface for Mono and .NET." />
-    <MSBuild Projects="package\Mono.proj"
-             Properties="AssemblyName=Mono.Security;Version=$(Version);Description=Mono.Security containing utilities like Authenticode." />
-  </Target>
-
-  <Target Name="_AfterRestore" AfterTargets="Restore">
-    <MSBuild Projects="package\Mono.proj" Targets="Restore" />
-  </Target>
-
-  <Target Name="_ReadManifest">
-    <HttpClient ReadContent="true" RequestUri="https://raw.githubusercontent.com/mono/website/gh-pages/_data/latestrelease.yml">
-      <Output TaskParameter="StatusCode" PropertyName="StatusCode" />
-      <Output TaskParameter="Content" PropertyName="Manifest" />
-    </HttpClient>
-
-    <PropertyGroup>
-      <Version>$([System.Text.RegularExpressions.Regex]::Match("$(Manifest)", "(?&lt;=\().*(?=\))").Value)</Version>
-      <MsiInstaller>$([System.Text.RegularExpressions.Regex]::Match("$(Manifest)", "(?&lt;=:\s).*-x64-\d\.msi").Value)</MsiInstaller>
-      <PkgInstaller>$([System.Text.RegularExpressions.Regex]::Match("$(Manifest)", "(?&lt;=:\s).*\.pkg").Value)</PkgInstaller>
-    </PropertyGroup>
-
-    <Message Importance="high" Text="##vso[build.updatebuildnumber]$(Version)-$(BUILD_BUILDID)" />
-
-    <ItemGroup>
-      <MsiInstaller Include="$(MsiInstaller)">
-        <Platform>Win</Platform>
-      </MsiInstaller>
-      <MsiInstaller>
-        <Inputs>$(ObjDir)%(Filename).txt</Inputs>
-        <OutputPath>$(ObjDir)%(Platform)</OutputPath>
-      </MsiInstaller>
-      <MsiInstaller>
-        <Outputs>%(OutputPath)\%(Filename)%(Extension)</Outputs>
-      </MsiInstaller>
-
-      <PkgInstaller Include="$(PkgInstaller)">
-        <Platform>Mac</Platform>
-      </PkgInstaller>
-      <PkgInstaller>
-        <Inputs>$(ObjDir)%(Filename).txt</Inputs>
-        <OutputPath>$(ObjDir)%(Platform)</OutputPath>
-      </PkgInstaller>
-      <PkgInstaller>
-        <Outputs>%(OutputPath)\%(Filename)%(Extension)</Outputs>
-      </PkgInstaller>
-
-      <Installer Include="@(MsiInstaller);@(PkgInstaller)" />
-    </ItemGroup>
-  </Target>
-
-  <Target Name="_CleanExtracted"
-          Inputs="@(Installer -> '%(Inputs)')"
-          Outputs="@(Installer -> '%(Outputs)')">
-    <RemoveDir Directories="%(Installer.OutputPath)" Condition="Exists('%(Installer.OutputPath)')" />
-  </Target>
-
-  <Target Name="_DownloadInstaller"
-          Inputs="@(Installer -> '%(Inputs)')"
-          Outputs="@(Installer -> '%(Outputs)')">
-    <MakeDir Directories="%(Installer.OutputPath)" Condition="!Exists('%(Installer.OutputPath)')" />
-    <Touch Files="%(Installer.Inputs)" AlwaysCreate="true" />
-    <DownloadFile Condition="!Exists('%(Installer.Outputs)')" RequestUri="@(Installer)" OutputFile="%(Installer.Outputs)" />
-  </Target>
-
-  <Target Name="_ExtractMsiInstaller"
-          Inputs="@(MsiInstaller -> '%(Outputs)')"
-          Outputs="@(MsiInstaller -> '%(OutputPath)\msi')"
-          DependsOnTargets="_ReadManifest">
-    <Exec Command='start /wait msiexec /a "%(MsiInstaller.Outputs)" /quiet /passive TARGETDIR="%(MsiInstaller.OutputPath)\msi"'
-          WorkingDirectory='%(MsiInstaller.OutputPath)'
-				  StandardErrorImportance="high"
-				  StandardOutputImportance="low"
-					ConsoleToMSBuild="true" />
-  </Target>
-
-  <Target Name="_ExtractPkgInstaller"
-          Inputs="@(PkgInstaller -> '%(Outputs)')"
-          Outputs="@(PkgInstaller -> '%(OutputPath)\Payload~')"
-          DependsOnTargets="_ReadManifest">
-    <Exec Command='"$(Zip)" x -aos -y -r -o"%(PkgInstaller.OutputPath)" "%(PkgInstaller.Outputs)"'
-				  StandardErrorImportance="high"
-				  StandardOutputImportance="low"
-					ConsoleToMSBuild="true" />
-    <Exec Command='"$(Zip)" x -aos -y -r -o"%(PkgInstaller.OutputPath)" "%(PkgInstaller.OutputPath)\Payload~"'
-				  StandardErrorImportance="high"
-				  StandardOutputImportance="low"
-					ConsoleToMSBuild="true" />
-  </Target>
-
-  <Target Name="Configure" DependsOnTargets="Restore" />
-  <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
-  <Target Name="Clean" />
-  <Target Name="Test" />
-  <Target Name="Run" />
-
-  <Import Project="build\corebuild.targets" />
-  <Import Project="build.tasks" />
+  <Import Project="build.targets" />
 </Project>
