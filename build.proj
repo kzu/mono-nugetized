@@ -23,7 +23,6 @@
 
   <Target Name="Build" DependsOnTargets="$(BuildDependsOn)">
     <Message Text="Building packages for version v$(Version)" Importance="high" />
-    <Message Importance="high" Text="##vso[build.updatebuildnumber]$(Version)-$(BUILD_BUILDID)" />
 
     <MSBuild Projects="package\Mono.proj"
              Properties="AssemblyName=Mono.Posix;Version=$(Version);Description=POSIX interface for Mono and .NET." />
@@ -46,6 +45,8 @@
       <MsiInstaller>$([System.Text.RegularExpressions.Regex]::Match("$(Manifest)", "(?&lt;=:\s).*-x64-\d\.msi").Value)</MsiInstaller>
       <PkgInstaller>$([System.Text.RegularExpressions.Regex]::Match("$(Manifest)", "(?&lt;=:\s).*\.pkg").Value)</PkgInstaller>
     </PropertyGroup>
+
+    <Message Importance="high" Text="##vso[build.updatebuildnumber]$(Version)-$(BUILD_BUILDID)" />
 
     <ItemGroup>
       <MsiInstaller Include="$(MsiInstaller)">
