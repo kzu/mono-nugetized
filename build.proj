@@ -18,7 +18,7 @@
 
   <ItemGroup>
     <PackageReference Include="Sleet.Azure" Version="*" />
-    <Package Include="$(BinDir)*.nupkg" >
+    <Package Include="$(BinDir)*.nupkg" />
   </ItemGroup>
 
   <Target Name="Build" DependsOnTargets="$(BuildDependsOn)">
