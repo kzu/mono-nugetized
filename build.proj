@@ -16,6 +16,11 @@
     </BuildDependsOn>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Sleet.Azure" Version="*" />
+    <Package Include="$(BinDir)*.nupkg" >
+  </ItemGroup>
+
   <Target Name="Build" DependsOnTargets="$(BuildDependsOn)">
     <Message Text="Building packages for version v$(Version)" Importance="high" />
     <Message Importance="high" Text="##vso[build.updatebuildnumber]$(Version)-$(BUILD_BUILDID)" />
