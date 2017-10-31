@@ -18,9 +18,10 @@
 
   <Target Name="Build" DependsOnTargets="$(BuildDependsOn)">
     <Message Text="Building packages for version v$(Version)" Importance="high" />
+    <Message Importance="high" Text="##vso[build.updatebuildnumber]$(Version)-$(BUILD_BUILDID)" />
 
     <MSBuild Projects="package\Mono.proj"
-             Properties="AssemblyName=Mono.Posix;Version=$(Version);Description=Mono.Security containing utilities like Authenticode." />
+             Properties="AssemblyName=Mono.Posix;Version=$(Version);Description=POSIX interface for Mono and .NET." />
     <MSBuild Projects="package\Mono.proj"
              Properties="AssemblyName=Mono.Security;Version=$(Version);Description=Mono.Security containing utilities like Authenticode." />
   </Target>
