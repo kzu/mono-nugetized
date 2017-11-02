@@ -22,11 +22,21 @@
     <Package Include="$(BinDir)*.nupkg" />
   </ItemGroup>
 
+  <Target Name="Echo" Returns="@(_NuGetize)">
+    <SetAdditionalProperties Items="@(NuGetize)">
+      <Output TaskParameter="Result" ItemName="_NuGetize" />
+    </SetAdditionalProperties>
+  </Target>
+
   <Target Name="Build" DependsOnTargets="$(BuildDependsOn)">
-    <Message Text="Building packages for version v$(Version)" Importance="high" />
+    <Message Text="Building packages from Mono version v$(MonoVersion)" Importance="high" />
+
+    <SetAdditionalProperties Items="@(NuGetize)">
+      <Output TaskParameter="Result" ItemName="_NuGetize" />
+    </SetAdditionalProperties>
 
     <MSBuild Projects="package\Mono.proj"
-             Properties="AssemblyName=%(NuGetize.Identity);Version=$(Version);Description=%(NuGetize.Description)" />
+             Properties="AssemblyName=%(_NuGetize.Identity);MonoVersion=$(MonoVersion);%(_NuGetize.AdditionalProperties)" />
   </Target>
 
   <Target Name="_AfterRestore" AfterTargets="Restore">
@@ -40,12 +50,12 @@
     </HttpClient>
 
     <PropertyGroup>
-      <Version>$([System.Text.RegularExpressions.Regex]::Match("$(Manifest)", "(?&lt;=\().*(?=\))").Value)</Version>
+      <MonoVersion>$([System.Text.RegularExpressions.Regex]::Match("$(Manifest)", "(?&lt;=\().*(?=\))").Value)</MonoVersion>
       <MsiInstaller>$([System.Text.RegularExpressions.Regex]::Match("$(Manifest)", "(?&lt;=:\s).*-x64-\d\.msi").Value)</MsiInstaller>
       <PkgInstaller>$([System.Text.RegularExpressions.Regex]::Match("$(Manifest)", "(?&lt;=:\s).*\.pkg").Value)</PkgInstaller>
     </PropertyGroup>
 
-    <Message Importance="high" Text="##vso[build.updatebuildnumber]$(Version)-$(BUILD_BUILDID)" />
+    <Message Importance="high" Text="##vso[build.updatebuildnumber]$(MonoVersion)-$(BUILD_BUILDID)" />
 
     <ItemGroup>
       <MsiInstaller Include="$(MsiInstaller)">

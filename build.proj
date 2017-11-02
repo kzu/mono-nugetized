@@ -4,9 +4,11 @@
   <ItemGroup>
     <NuGetize Include="Mono.Posix">
       <Description>POSIX interface for Mono and .NET.</Description>
+      <Versioning>Mono</Versioning>
     </NuGetize>
     <NuGetize Include="Mono.Security">
       <Description>Mono.Security containing utilities like Authenticode.</Description>
+      <Versioning>Mono</Versioning>
     </NuGetize>
   </ItemGroup>
 

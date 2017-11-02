@@ -115,4 +115,27 @@
     </Task>
   </UsingTask>
 
+  <UsingTask TaskName="SetAdditionalProperties" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildBinPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <Items ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
+      <Result ParameterType="Microsoft.Build.Framework.ITaskItem[]" Output="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System.Reflection" />
+      <Code Type="Fragment" Language="cs">
+        <![CDATA[
+          foreach (var item in Items)
+          {
+	          item.SetMetadata("AdditionalProperties", string.Join(";", 
+		          item.CloneCustomMetadata()
+			          .OfType<KeyValuePair<string, string>>()
+			          .Select(x => x.Key + "=" + x.Value)));
+          }
+
+          Result = Items;
+        ]]>
+      </Code>
+    </Task>
+  </UsingTask>
+
 </Project>
