@@ -10,6 +10,13 @@
       <Description>Mono.Security containing utilities like Authenticode.</Description>
       <Versioning>Mono</Versioning>
     </NuGetize>
+    <NuGetize Include="ICSharpCode.SharpZipLib">
+      <Description>#ziplib is a Zip, GZip, Tar and BZip2 library written entirely in C# for the .NET platform.</Description>
+      <Versioning>Assembly</Versioning>
+      <XPlat>true</XPlat>
+      <PackageProjectUrl>https://github.com/icsharpcode/SharpZipLib</PackageProjectUrl>
+      <PackageReleaseNotes>Version distributed with Mono v$MonoVersion$.</PackageReleaseNotes>
+    </NuGetize>    
   </ItemGroup>
 
   <Import Project="build.targets" />
