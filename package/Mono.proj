@@ -1,13 +1,23 @@
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" TreatAsLocalProperty="Description;PackageReleaseNotes" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\build.props" />
 
   <!-- Package metadata -->
   <PropertyGroup>
     <PackageId>$(AssemblyName)</PackageId>
-    <PackageVersion>$(Version)</PackageVersion>
-    <PackageVersion Condition="'$(PackageVersion)' == ''">0.1.0</PackageVersion>
+    <PackageVersion Condition="'$(Versioning)' == 'Mono'">$(MonoVersion)</PackageVersion>
+
     <Authors>Mono</Authors>
     <Description Condition="'$(Description)' == ''">$(PackageId)</Description>
+    <PackageProjectUrl>https://github.com/mono/mono</PackageProjectUrl>
+
+    <Description>$(Description.Replace('$MonoVersion$', '$(MonoVersion)'))</Description>
+    <PackageReleaseNotes>$(PackageReleaseNotes.Replace('$MonoVersion$', '$(MonoVersion)'))</PackageReleaseNotes>
+
+    <!-- Wheter the assembly is pure MSIL with no platform specific flags/implementations
+         We default to consider everything platform-specific, requiring per-platform 
+         assemblies and targets that reference them.
+    -->
+    <XPlat Condition="'$(XPlat)' == ''">false</XPlat> 
   </PropertyGroup>
 
   <!-- Package build props -->
@@ -20,19 +30,45 @@
 
   <PropertyGroup>
     <WinPath>$(ObjDir)Win\msi\Mono\lib\mono\4.5</WinPath>
-    <MacPath>$(ObjDir)Mac\Library\Frameworks\Mono.framework\Versions\$([System.Text.RegularExpressions.Regex]::Match("$(PackageVersion)", "\d+\.\d+\.\d+").Value)\lib\mono\4.5</MacPath>
+    <MacPath>$(ObjDir)Mac\Library\Frameworks\Mono.framework\Versions\*\lib\mono\4.5</MacPath>
   </PropertyGroup>
 
-  <Target Name="Build" DependsOnTargets="$(BuildDependsOn)" />
+  <Target Name="Build" DependsOnTargets="_SetPackageVersion;$(BuildDependsOn)" />
+
+  <Target Name="_SetPackageVersion" Condition="'$(PackageVersion)' == ''">
+    <GetAssemblyVersion AssemblyFile="$(WinPath)\$(AssemblyName).dll">
+      <Output TaskParameter="AssemblyVersion" PropertyName="PackageVersion" />
+    </GetAssemblyVersion>
+  </Target>
 
   <ItemGroup>
     <PackageReference Include="NuGet.Build.Packaging" Version="*" />
+  </ItemGroup>
 
+  <ItemGroup Condition="'$(XPlat)' == 'false'">
     <PackageFile Include="$(AssemblyName).targets" PackagePath="build\net45\$(AssemblyName).targets" />
-
     <PackageFile Include="$(WinPath)\$(AssemblyName).dll" PackagePath="build\net45\win\$(AssemblyName).dll" />
     <PackageFile Include="$(MacPath)\$(AssemblyName).dll" PackagePath="build\net45\mac\$(AssemblyName).dll" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(XPlat)' == 'true'">
+    <PackageFile Include="$(WinPath)\$(AssemblyName).dll" PackagePath="lib\net45\$(AssemblyName).dll" />
+  </ItemGroup>
+
   <Import Project="..\build\corebuild.targets" />
+
+  <UsingTask TaskName="GetAssemblyVersion" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildBinPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <AssemblyFile Required="true" />
+      <AssemblyVersion Output="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System.Reflection" />
+      <Code Type="Fragment" Language="cs">
+        var name = AssemblyName.GetAssemblyName(AssemblyFile);
+        AssemblyVersion = name.Version.Major + "." + name.Version.Minor + "." + name.Version.Build;
+      </Code>
+    </Task>
+  </UsingTask>
+
 </Project>
