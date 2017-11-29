@@ -1,6 +1,13 @@
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="build.props" />
 
+  <PropertyGroup>
+    <!-- Validate/init feed before pushing. Typically, init is done once, manually. Validate takes time -->
+    <SleetValidate Condition="'$(SleetValidate)' == ''">false</SleetValidate>
+    <StorageAccount>kzu</StorageAccount>
+    <StorageContainer>nuget</StorageContainer>
+  </PropertyGroup>
+
   <ItemGroup>
     <NuGetize Include="Mono.Posix">
       <Description>POSIX interface for Mono and .NET.</Description>
